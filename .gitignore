@@ -1,10 +1,30 @@
 HELP.md
-target/
+**/target/
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
 
-### STS ###
+### Environment & Secrets (NEVER commit secrets) ###
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.jks
+*.crt
+
+### Terraform / Infrastructure as Code ###
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+crash.log
+override.tf
+override.tf.json
+
+### STS / Eclipse ###
 .apt_generated
 .classpath
 .factorypath
@@ -14,10 +34,11 @@ target/
 .sts4-cache
 
 ### IntelliJ IDEA ###
-.idea
+.idea/
 *.iws
 *.iml
 *.ipr
+out/
 
 ### NetBeans ###
 /nbproject/private/
@@ -31,3 +52,8 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### OS & Logs ###
+.DS_Store
+Thumbs.db
+*.log
