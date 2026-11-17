@@ -39,7 +39,7 @@
 
         <!-- Build & Quality Plugin Versions -->
         <jacoco-maven-plugin.version>0.8.12</jacoco-maven-plugin.version>
-        <sonar-maven-plugin.version>4.0.0.4121</sonar-maven-plugin.version>
+        <sonar-maven-plugin.version>5.8.0.7211</sonar-maven-plugin.version>
         <jacoco.minimum.coverage>0.80</jacoco.minimum.coverage>
 
         <!-- SonarCloud / SonarQube Properties -->
