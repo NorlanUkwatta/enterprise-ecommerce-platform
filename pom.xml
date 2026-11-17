@@ -20,6 +20,7 @@
 
     <!-- Modules will be registered incrementally as each unit is created -->
     <modules>
+        <module>platform-commons</module>
     </modules>
 
     <properties>
