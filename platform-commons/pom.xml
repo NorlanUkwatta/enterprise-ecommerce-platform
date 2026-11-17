@@ -16,7 +16,14 @@
     <description>Shared cross-cutting utilities, DSA primitives, and API contracts for microservices</description>
 
     <dependencies>
-        <!-- Test Dependencies (JUnit 5 + AssertJ) -->
+        <!-- Provided Web APIs for shared RFC 7807 ProblemDetail & Correlation Filter -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- Test Dependencies (JUnit 5 + AssertJ + Spring MockHttpServletRequest) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
