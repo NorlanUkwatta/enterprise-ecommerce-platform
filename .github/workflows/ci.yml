@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
   security-events: write
   pull-requests: write
 
@@ -91,6 +92,8 @@ jobs:
   sast-codeql:
     name: SAST Analysis (GitHub CodeQL)
     runs-on: ubuntu-latest
+    env:
+      CODEQL_ACTION_FILE_COVERAGE_ON_PRS: 'false'
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v5
@@ -115,7 +118,7 @@ jobs:
 
       - name: Initialize CodeQL for Java
         if: steps.check_java.outputs.has_java == 'true'
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@v4
         with:
           languages: java-kotlin
 
@@ -127,4 +130,18 @@ jobs:
 
       - name: Perform CodeQL SAST Analysis
         if: steps.check_java.outputs.has_java == 'true'
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@v4
+        with:
+          output: ../results
+          upload: ${{ github.event.repository.private && 'never' || 'always' }}
+          upload-database: ${{ !github.event.repository.private }}
+
+      - name: Enforce Zero CodeQL Findings Gate
+        if: steps.check_java.outputs.has_java == 'true'
+        run: |
+          FINDINGS=$(jq '[.runs[].results[]] | length' ../results/java-kotlin.sarif)
+          echo "CodeQL SAST Findings Count: $FINDINGS"
+          if [ "$FINDINGS" -gt 0 ]; then
+            jq '.runs[].results[] | {ruleId: .ruleId, message: .message.text, locations: .locations}' ../results/java-kotlin.sarif
+            exit 1
+          fi
