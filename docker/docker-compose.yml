@@ -1,0 +1,113 @@
+name: enterprise-ecommerce-infra
+
+services:
+  # ===========================================================================
+  # 1. POSTGRESQL 16 (Hosts 7 Isolated Databases & Users for Microservices)
+  # ===========================================================================
+  postgres:
+    image: postgres:16.6-alpine
+    container_name: ecommerce-postgres
+    restart: unless-stopped
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_SUPERUSER:?POSTGRES_SUPERUSER is required in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD:?POSTGRES_SUPERUSER_PASSWORD is required in .env}
+      POSTGRES_DB: postgres
+      KEYCLOAK_DB_NAME: ${KEYCLOAK_DB_NAME}
+      KEYCLOAK_DB_USER: ${KEYCLOAK_DB_USER}
+      KEYCLOAK_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD:?KEYCLOAK_DB_PASSWORD is required in .env}
+      USER_DB_NAME: ${USER_DB_NAME}
+      USER_DB_USER: ${USER_DB_USER}
+      USER_DB_PASSWORD: ${USER_DB_PASSWORD:?USER_DB_PASSWORD is required in .env}
+      CATALOG_DB_NAME: ${CATALOG_DB_NAME}
+      CATALOG_DB_USER: ${CATALOG_DB_USER}
+      CATALOG_DB_PASSWORD: ${CATALOG_DB_PASSWORD:?CATALOG_DB_PASSWORD is required in .env}
+      INVENTORY_DB_NAME: ${INVENTORY_DB_NAME}
+      INVENTORY_DB_USER: ${INVENTORY_DB_USER}
+      INVENTORY_DB_PASSWORD: ${INVENTORY_DB_PASSWORD:?INVENTORY_DB_PASSWORD is required in .env}
+      COUPON_DB_NAME: ${COUPON_DB_NAME}
+      COUPON_DB_USER: ${COUPON_DB_USER}
+      COUPON_DB_PASSWORD: ${COUPON_DB_PASSWORD:?COUPON_DB_PASSWORD is required in .env}
+      ORDER_DB_NAME: ${ORDER_DB_NAME}
+      ORDER_DB_USER: ${ORDER_DB_USER}
+      ORDER_DB_PASSWORD: ${ORDER_DB_PASSWORD:?ORDER_DB_PASSWORD is required in .env}
+      PAYMENT_DB_NAME: ${PAYMENT_DB_NAME}
+      PAYMENT_DB_USER: ${PAYMENT_DB_USER}
+      PAYMENT_DB_PASSWORD: ${PAYMENT_DB_PASSWORD:?PAYMENT_DB_PASSWORD is required in .env}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init-multiple-dbs.sh:/docker-entrypoint-initdb.d/init-multiple-dbs.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_SUPERUSER} -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ecommerce-net
+
+  # ===========================================================================
+  # 2. REDIS 7 (L2 Cache, Shopping Cart, Bloom Filter & Rate Limiter)
+  # ===========================================================================
+  redis:
+    image: redis:7.4-alpine
+    container_name: ecommerce-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    command:
+      - redis-server
+      - --requirepass
+      - ${REDIS_PASSWORD:?REDIS_PASSWORD is required in .env}
+      - --appendonly
+      - "yes"
+      - --maxmemory
+      - 256mb
+      - --maxmemory-policy
+      - allkeys-lru
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ecommerce-net
+
+  # ===========================================================================
+  # 3. KEYCLOAK 26 (OAuth 2.1 / OpenID Connect Identity Provider)
+  # ===========================================================================
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0.7
+    container_name: ecommerce-keycloak
+    restart: unless-stopped
+    command:
+      - start-dev
+      - --import-realm
+      - --health-enabled=true
+    ports:
+      - "${KEYCLOAK_PORT:-8081}:8080"
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/${KEYCLOAK_DB_NAME}
+      KC_DB_USERNAME: ${KEYCLOAK_DB_USER}
+      KC_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD:?KEYCLOAK_DB_PASSWORD is required in .env}
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USER:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?KEYCLOAK_ADMIN_PASSWORD is required in .env}
+      KC_HTTP_PORT: 8080
+    volumes:
+      - ./keycloak/enterprise-ecommerce-realm.json:/opt/keycloak/data/import/enterprise-ecommerce-realm.json:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - ecommerce-net
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  ecommerce-net:
+    driver: bridge
