@@ -21,6 +21,7 @@
     <!-- Modules will be registered incrementally as each unit is created -->
     <modules>
         <module>platform-commons</module>
+        <module>services/catalog-service</module>
     </modules>
 
     <properties>
@@ -212,6 +213,10 @@
         </pluginManagement>
 
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+            </plugin>
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
